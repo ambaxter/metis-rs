@@ -1,0 +1,16 @@
+[package]
+name = "metis-parser"
+version = "0.1.0"
+authors = ["abaxter <Adam Baxter>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+metis-core-derive = {path = "../metis-core-derive"}
+metis-core = {path = "../metis-core"}
+ordered-float = "1.0"
+num-traits = "0.2"
+itertools = "0.8"
+nom = "5"
+nom_locate = "2"

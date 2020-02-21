@@ -1,0 +1,13 @@
+[package]
+name = "metis-redux"
+version = "0.1.0"
+authors = ["abaxter <Adam Baxter>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+
+[dependencies]
+metis-core = { path = "metis-core"}
+metis-parser = { path = "metis-parser"}

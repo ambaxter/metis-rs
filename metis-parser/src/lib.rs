@@ -610,33 +610,53 @@ pub(crate) mod rhs {
   }
 
   #[derive(Clone, PartialEq, Eq, Debug)]
+  pub(crate) enum BindingType<'a> {
+    Default,
+    Clone(Spanned<'a, BIdent<'a>>),
+    Exp(Expression<'a>)
+  }
+
+  #[derive(Clone, PartialEq, Eq, Debug)]
   pub(crate) enum Statement<'a> {
-    Binding { left: Spanned<'a, BIdent<'a>>, t: Option<Spanned<'a, Ident<'a>>>, right: Option<Expression<'a>> },
+    Binding { left: Spanned<'a, BIdent<'a>>, t: Option<Spanned<'a, Ident<'a>>>, right: BindingType<'a> },
     Assignment { op: Spanned<'a, AssignOp>, left: Assignable<'a>, right: Expression<'a> },
     Update(Spanned<'a, BIdent<'a>>),
     Insert(Spanned<'a, BIdent<'a>>),
     Retract(Spanned<'a, BIdent<'a>>),
   }
 
+  fn par_wrapped_bident(i: Span) -> nom::IResult<Span, Spanned<BIdent>> {
+    delimited(pre_ms0(stag("(")), parse_bident, pre_ms0(stag(")")))(i)
+  }
+
+
+  fn empty_par(i: Span) -> nom::IResult<Span, Span> {
+    delimited(pre_ms0(stag("(")), multispace0, pre_ms0(stag(")")))(i)
+  }
+
   pub(crate) fn parse_statement(s: Span) -> nom::IResult<Span, Statement> {
+
     let map_update = map(
       preceded(pre_ms0(stag("update")),
-               delimited(pre_ms0(stag("(")), parse_bident, pre_ms0(stag(")")))),
+               par_wrapped_bident),
       |b| Statement::Update(b),
     );
     let map_insert = map(
       preceded(pre_ms0(stag("insert")),
-               delimited(pre_ms0(stag("(")), parse_bident, pre_ms0(stag(")")))),
+               par_wrapped_bident),
       |b| Statement::Insert(b),
     );
     let map_retract = map(
       preceded(pre_ms0(stag("retract")),
-               delimited(pre_ms0(stag("(")), parse_bident, pre_ms0(stag(")")))),
+               par_wrapped_bident),
       |b| Statement::Retract(b),
     );
     let map_default_or_exp = alt((
-      map(pre_ms0(stag("Default::default()")), |_| None),
-      map(expression, |e| Some(e))
+      map(preceded(pre_ms0(stag("clone")), par_wrapped_bident),
+          |b| BindingType::Clone(b)),
+      map(preceded(pre_ms0(stag("default")), empty_par),
+          |_| BindingType::Default),
+      map(expression, |e| BindingType::Exp(e))
     ));
 
     let map_binding = map(
@@ -799,7 +819,7 @@ mod tests {
 
   #[test]
   fn test_rhs() {
-    println!("{:?}", rhs::parse_rhs(span("let b: New = Default::default(); insert(b); ")));
+    println!("{:?}", rhs::parse_rhs(span("let b: New = default(); let c = clone($bd); insert(b); insert($bd); ")));
   }
 
   /*

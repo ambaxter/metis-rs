@@ -31,8 +31,8 @@ pub trait FactDef {
   fn name(&self) -> &str;
   fn module(&self) -> &str;
   fn bool_fields(&self) -> &[(&str, u32)];
-  fn integer_fields(&self) -> &[(&str, u32)];
-  fn real_fields(&self) -> &[(&str, u32)];
+  fn i64_fields(&self) -> &[(&str, u32)];
+  fn f64_fields(&self) -> &[(&str, u32)];
   fn str_fields(&self) -> &[(&str, u32)];
 }
 
@@ -42,7 +42,7 @@ pub struct StaticFactDef {
   name: &'static str,
   module: &'static str,
   bool_fields: &'static [(&'static str, u32)],
-  integer_fields: &'static [(&'static str, u32)],
+  i64_fields: &'static [(&'static str, u32)],
   real_fields: &'static [(&'static str, u32)],
   str_fields: &'static [(&'static str, u32)]
 }
@@ -52,7 +52,7 @@ impl StaticFactDef {
                name: &'static str,
                module: &'static str,
                bool_fields: &'static [(&'static str, u32)],
-               integer_fields: &'static [(&'static str, u32)],
+               i64_fields: &'static [(&'static str, u32)],
                real_fields: &'static [(&'static str, u32)],
                str_fields: &'static [(&'static str, u32)]) -> StaticFactDef {
     StaticFactDef{
@@ -60,7 +60,7 @@ impl StaticFactDef {
       name,
       module,
       bool_fields,
-      integer_fields,
+      i64_fields,
       real_fields,
       str_fields
     }
@@ -84,11 +84,11 @@ impl FactDef for StaticFactDef {
     self.bool_fields
   }
 
-  fn integer_fields(&self) -> &[(&str, u32)] {
-    self.integer_fields
+  fn i64_fields(&self) -> &[(&str, u32)] {
+    self.i64_fields
   }
 
-  fn real_fields(&self) -> &[(&str, u32)] {
+  fn f64_fields(&self) -> &[(&str, u32)] {
     self.real_fields
   }
 

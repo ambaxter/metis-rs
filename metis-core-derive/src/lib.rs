@@ -15,8 +15,8 @@ use quote::quote;
 struct StaticFactMacroInput {
   fact_name: Ident,
   bool_fields : BTreeMap<u32, Ident>,
-  integer_fields : BTreeMap<u32, Ident>,
-  real_fields : BTreeMap<u32, Ident>,
+  i64_fields : BTreeMap<u32, Ident>,
+  f64_fields: BTreeMap<u32, Ident>,
   string_fields : BTreeMap<u32, Ident>
 }
 
@@ -29,8 +29,8 @@ impl Parse for StaticFactMacroInput {
     let fields: Punctuated<Field, Token![,]> = content.parse_terminated(Field::parse_named)?;
 
     let mut bool_fields : BTreeMap<u32, Ident> = BTreeMap::new();
-    let mut integer_fields : BTreeMap<u32, Ident> = BTreeMap::new();
-    let mut real_fields : BTreeMap<u32, Ident> = BTreeMap::new();
+    let mut i64_fields : BTreeMap<u32, Ident> = BTreeMap::new();
+    let mut f64_fields: BTreeMap<u32, Ident> = BTreeMap::new();
     let mut string_fields : BTreeMap<u32, Ident> = BTreeMap::new();
     let mut idx = 0;
     for ref field in fields {
@@ -40,9 +40,9 @@ impl Parse for StaticFactMacroInput {
           if p.path.is_ident("bool") {
             bool_fields.insert(idx, ident.clone());
           } else if p.path.is_ident("i64") {
-            integer_fields.insert(idx, ident.clone());
+            i64_fields.insert(idx, ident.clone());
           } else if p.path.is_ident("f64") {
-            real_fields.insert(idx, ident.clone());
+            f64_fields.insert(idx, ident.clone());
           } else if p.path.is_ident("String") {
             string_fields.insert(idx, ident.clone());
           }
@@ -51,7 +51,7 @@ impl Parse for StaticFactMacroInput {
         _ => {}
       }
     }
-    Ok(StaticFactMacroInput{fact_name: ident, bool_fields, integer_fields, real_fields, string_fields})
+    Ok(StaticFactMacroInput{fact_name: ident, bool_fields, i64_fields, f64_fields, string_fields})
   }
 }
 
@@ -86,48 +86,48 @@ impl Into<proc_macro::TokenStream> for StaticFactMacroInput {
         }
       };
 
-    let int_idx_get_iter = self.integer_fields.iter().map(|f| f.0);
-    let int_idx_set_iter = self.integer_fields.iter().map(|f| f.0);
-    let int_field_get_iter = self.integer_fields.iter().map(|f| f.1);
-    let int_field_set_iter = self.integer_fields.iter().map(|f| f.1);
+    let i64_idx_get_iter = self.i64_fields.iter().map(|f| f.0);
+    let i64_idx_set_iter = self.i64_fields.iter().map(|f| f.0);
+    let i64_field_get_iter = self.i64_fields.iter().map(|f| f.1);
+    let i64_field_set_iter = self.i64_fields.iter().map(|f| f.1);
 
-    let fact_fn_integer = quote! {
+    let fact_fn_i64 = quote! {
         impl metis_core::FactFn<i64> for #fact_name {
           fn get_field(&self, idx: u32) -> &i64 {
             match idx {
-              #(#int_idx_get_iter => &self.#int_field_get_iter),*,
-              _ => panic!("Unexpected get access for int {}", idx)
+              #(#i64_idx_get_iter => &self.#i64_field_get_iter),*,
+              _ => panic!("Unexpected get access for i64 {}", idx)
             }
           }
 
           fn set_field(&mut self, idx: u32, to: &i64) {
             match idx {
-              #(#int_idx_set_iter => self.#int_field_set_iter = *to),*,
-              _ => panic!("Unexpected set access for int {}", idx)
+              #(#i64_idx_set_iter => self.#i64_field_set_iter = *to),*,
+              _ => panic!("Unexpected set access for i64 {}", idx)
 
             }
           }
         }
       };
 
-    let real_idx_get_iter = self.real_fields.iter().map(|f| f.0);
-    let real_idx_set_iter = self.real_fields.iter().map(|f| f.0);
-    let real_field_get_iter = self.real_fields.iter().map(|f| f.1);
-    let real_field_set_iter = self.real_fields.iter().map(|f| f.1);
+    let f64_idx_get_iter = self.f64_fields.iter().map(|f| f.0);
+    let f64_idx_set_iter = self.f64_fields.iter().map(|f| f.0);
+    let f64_field_get_iter = self.f64_fields.iter().map(|f| f.1);
+    let f64_field_set_iter = self.f64_fields.iter().map(|f| f.1);
 
-    let fact_fn_real = quote! {
+    let fact_fn_f64 = quote! {
         impl metis_core::FactFn<f64> for #fact_name {
           fn get_field(&self, idx: u32) -> &f64 {
             match idx {
-              #(#real_idx_get_iter => &self.#real_field_get_iter),*,
-              _ => panic!("Unexpected get access for real {}", idx)
+              #(#f64_idx_get_iter => &self.#f64_field_get_iter),*,
+              _ => panic!("Unexpected get access for f64 {}", idx)
             }
           }
 
           fn set_field(&mut self, idx: u32, to: &f64) {
             match idx {
-              #(#real_idx_set_iter => self.#real_field_set_iter = *to),*,
-              _ => panic!("Unexpected set access for real {}", idx)
+              #(#f64_idx_set_iter => self.#f64_field_set_iter = *to),*,
+              _ => panic!("Unexpected set access for f64 {}", idx)
 
             }
           }
@@ -161,10 +161,10 @@ impl Into<proc_macro::TokenStream> for StaticFactMacroInput {
 
     let bool_idx_list_iter = self.bool_fields.iter().map(|f| f.0);
     let bool_field_list_iter = self.bool_fields.iter().map(|f| f.1.to_string());
-    let int_idx_list_iter = self.integer_fields.iter().map(|f| f.0);
-    let int_field_list_iter = self.integer_fields.iter().map(|f| f.1.to_string());
-    let real_idx_list_iter = self.real_fields.iter().map(|f| f.0);
-    let real_field_list_iter = self.real_fields.iter().map(|f| f.1.to_string());
+    let i64_idx_list_iter = self.i64_fields.iter().map(|f| f.0);
+    let i64_field_list_iter = self.i64_fields.iter().map(|f| f.1.to_string());
+    let f64_idx_list_iter = self.f64_fields.iter().map(|f| f.0);
+    let f64_field_list_iter = self.f64_fields.iter().map(|f| f.1.to_string());
     let str_idx_list_iter = self.string_fields.iter().map(|f| f.0);
     let str_field_list_iter = self.string_fields.iter().map(|f| f.1.to_string());
 
@@ -176,8 +176,8 @@ impl Into<proc_macro::TokenStream> for StaticFactMacroInput {
             &#fact_name_string,
             &"",
             &[#((#bool_field_list_iter, #bool_idx_list_iter)),*],
-            &[#((#int_field_list_iter, #int_idx_list_iter)),*],
-            &[#((#real_field_list_iter, #real_idx_list_iter)),*],
+            &[#((#i64_field_list_iter, #i64_idx_list_iter)),*],
+            &[#((#f64_field_list_iter, #f64_idx_list_iter)),*],
             &[#((#str_field_list_iter, #str_idx_list_iter)),*]
           )
         }
@@ -186,15 +186,15 @@ impl Into<proc_macro::TokenStream> for StaticFactMacroInput {
 
     let bool_ident = quote!{Option<bool>};
     let bool_idx_hasheq_item_iter = self.bool_fields.iter().map(|_| &bool_ident);
-    let integer_ident = quote!{Option<i64>};
-    let integer_idx_hasheq_item_iter = self.integer_fields.iter().map(|_| &integer_ident);
+    let i64_ident = quote!{Option<i64>};
+    let i64_idx_hasheq_item_iter = self.i64_fields.iter().map(|_| &i64_ident);
     let str_ident = quote!{Option<metis_core::StrSym>};
     let str_idx_hasheq_item_iter = self.string_fields.iter().map(|_| &str_ident);
 
     let bool_field_hasheq_var_iter = self.bool_fields.iter()
       .map(|f| f.1)
       .map(|i| quote!{let #i = metis_core::HashEqItemIterator::some(self.#i);});
-    let integer_field_hasheq_var_iter = self.integer_fields.iter()
+    let i64_field_hasheq_var_iter = self.i64_fields.iter()
       .map(|f| f.1)
       .map(|i| quote!{let #i = metis_core::HashEqItemIterator::some(self.#i);});
     let str_field_hasheq_var_iter = self.string_fields.iter()
@@ -202,27 +202,27 @@ impl Into<proc_macro::TokenStream> for StaticFactMacroInput {
       .map(|i| quote!{let #i = metis_core::HashEqItemIterator::new(string_interner.get(&self.#i));});
 
     let bool_field_hasheq_tuple_iter = self.bool_fields.iter().map(|f| f.1);
-    let integer_field_hasheq_tuple_iter = self.integer_fields.iter().map(|f| f.1);
+    let i64_field_hasheq_tuple_iter = self.i64_fields.iter().map(|f| f.1);
     let str_field_hasheq_tuple_iter = self.string_fields.iter().map(|f| f.1);
 
     let fact_hash_eq = quote! {
       impl metis_core::StaticFactHashEq for #fact_name {
-        type Item = ( #(#integer_idx_hasheq_item_iter),* , #(#str_idx_hasheq_item_iter),* , #(#bool_idx_hasheq_item_iter),*);
+        type Item = ( #(#i64_idx_hasheq_item_iter),* , #(#str_idx_hasheq_item_iter),* , #(#bool_idx_hasheq_item_iter),*);
 
         fn exhaustive_hash_eq(&self, string_interner: &metis_core::StringInterner) -> Box<dyn Iterator<Item = Self::Item>> {
           #(#bool_field_hasheq_var_iter)*
-          #(#integer_field_hasheq_var_iter)*
+          #(#i64_field_hasheq_var_iter)*
           #(#str_field_hasheq_var_iter)*
 
-          Box::new(itertools::iproduct!(#(#integer_field_hasheq_tuple_iter),* , #(#str_field_hasheq_tuple_iter),* , #(#bool_field_hasheq_tuple_iter),*))
+          Box::new(itertools::iproduct!(#(#i64_field_hasheq_tuple_iter),* , #(#str_field_hasheq_tuple_iter),* , #(#bool_field_hasheq_tuple_iter),*))
         }
       }
     };
 
     let out_tokens = quote! {
       #fact_fn_bool
-      #fact_fn_integer
-      #fact_fn_real
+      #fact_fn_i64
+      #fact_fn_f64
       #fact_fn_str
 
       #fact_hash_eq
